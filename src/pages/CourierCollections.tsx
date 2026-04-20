@@ -159,30 +159,14 @@ export default function CourierCollections() {
 
   const closeSelectedOrders = async () => {
     if (selectedOrders.size === 0) { toast.error('اختر أوردرات للتقفيل'); return; }
+    const ids = Array.from(selectedOrders);
+    if (!confirm(`هل تريد تقفيل ${ids.length} أوردر؟`)) return;
 
-    const selectedOrderRows = orders.filter(order => selectedOrders.has(order.id));
-    const closableOrders = selectedOrderRows.filter(order => isCourierOrderClosable(order.order_statuses?.name));
-    const blockedOrders = selectedOrderRows.filter(order => !isCourierOrderClosable(order.order_statuses?.name));
-
-    if (closableOrders.length === 0) {
-      toast.error(`كل الأوردرات المختارة (${blockedOrders.length}) حالتها نشطة ولا يمكن تقفيلها. غيّر الحالة أولاً.`);
-      return;
-    }
-
-    const confirmMsg = blockedOrders.length > 0
-      ? `سيتم تقفيل ${closableOrders.length} أوردر فقط. (${blockedOrders.length} أوردر حالتهم نشطة وسيتم تجاهلهم). متابعة؟`
-      : `هل تريد تقفيل ${closableOrders.length} أوردر؟`;
-    if (!confirm(confirmMsg)) return;
-
-    const ids = closableOrders.map(o => o.id);
     const { error } = await supabase.from('orders').update({ is_courier_closed: true }).in('id', ids);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
+    if (error) { toast.error(error.message); return; }
 
     logActivity('تقفيل أوردرات من تحصيلات المندوب', { courier_id: selectedCourier, count: ids.length });
-    toast.success(`تم تقفيل ${ids.length} أوردر${blockedOrders.length > 0 ? ` (تم تجاهل ${blockedOrders.length} لحالتهم النشطة)` : ''}`);
+    toast.success(`تم تقفيل ${ids.length} أوردر`);
     setSelectedOrders(new Set());
     loadCourierData();
   };
