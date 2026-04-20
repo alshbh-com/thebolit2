@@ -72,14 +72,19 @@ export default function Couriers() {
   };
   const closeSelected = async () => {
     if (selectedOrders.size === 0) return;
-    const blockedOrders = courierOrders.filter(order => selectedOrders.has(order.id) && !isCourierOrderClosable(order.order_statuses?.name));
-    if (blockedOrders.length > 0) {
-      toast.error(`لا يمكن تقفيل ${blockedOrders.length} أوردر لأن حالتها ما زالت نشطة`);
+    const selectedRows = courierOrders.filter(o => selectedOrders.has(o.id));
+    const closable = selectedRows.filter(o => isCourierOrderClosable(o.order_statuses?.name));
+    const blocked = selectedRows.filter(o => !isCourierOrderClosable(o.order_statuses?.name));
+    if (closable.length === 0) {
+      toast.error(`كل الأوردرات المختارة (${blocked.length}) حالتها نشطة. غيّر الحالة أولاً.`);
       return;
     }
-    if (!confirm(`تقفيل ${selectedOrders.size} أوردر؟`)) return;
-    await supabase.from('orders').update({ is_courier_closed: true }).in('id', Array.from(selectedOrders));
-    toast.success(`تم تقفيل ${selectedOrders.size} أوردر`);
+    const msg = blocked.length > 0
+      ? `سيتم تقفيل ${closable.length} أوردر فقط. (${blocked.length} حالتهم نشطة وسيتم تجاهلهم). متابعة؟`
+      : `تقفيل ${closable.length} أوردر؟`;
+    if (!confirm(msg)) return;
+    await supabase.from('orders').update({ is_courier_closed: true }).in('id', closable.map(o => o.id));
+    toast.success(`تم تقفيل ${closable.length} أوردر${blocked.length > 0 ? ` (تم تجاهل ${blocked.length})` : ''}`);
     loadCourierOrders();
   };
 
