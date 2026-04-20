@@ -65,17 +65,7 @@ export default function CourierCollections() {
       .eq('courier_id', selectedCourier)
       .order('created_at', { ascending: false });
 
-    const allOrders = orderData || [];
-    const hiddenActiveIds = getHiddenActiveCourierOrderIds(allOrders);
-
-    if (hiddenActiveIds.length > 0) {
-      await supabase.from('orders').update({ is_courier_closed: false }).in('id', hiddenActiveIds);
-    }
-
-    const reopenedIds = new Set(hiddenActiveIds);
-    const visibleOrders = allOrders
-      .map((order: any) => reopenedIds.has(order.id) ? { ...order, is_courier_closed: false } : order)
-      .filter((order: any) => !order.is_courier_closed);
+    const visibleOrders = (orderData || []).filter((order: any) => !order.is_courier_closed);
 
     setOrders(visibleOrders);
     setSelectedOrders(new Set());
