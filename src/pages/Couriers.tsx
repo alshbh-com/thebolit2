@@ -47,17 +47,7 @@ export default function Couriers() {
       .eq('courier_id', selectedCourier)
       .order('created_at', { ascending: false });
 
-    const allOrders = data || [];
-    const hiddenActiveIds = getHiddenActiveCourierOrderIds(allOrders);
-
-    if (hiddenActiveIds.length > 0) {
-      await supabase.from('orders').update({ is_courier_closed: false }).in('id', hiddenActiveIds);
-    }
-
-    const reopenedIds = new Set(hiddenActiveIds);
-    const visibleOrders = allOrders
-      .map(order => reopenedIds.has(order.id) ? { ...order, is_courier_closed: false } : order)
-      .filter(isCourierOrderVisible);
+    const visibleOrders = (data || []).filter(isCourierOrderVisible);
 
     setCourierOrders(visibleOrders);
     setSelectedOrders(new Set());
@@ -72,19 +62,10 @@ export default function Couriers() {
   };
   const closeSelected = async () => {
     if (selectedOrders.size === 0) return;
-    const selectedRows = courierOrders.filter(o => selectedOrders.has(o.id));
-    const closable = selectedRows.filter(o => isCourierOrderClosable(o.order_statuses?.name));
-    const blocked = selectedRows.filter(o => !isCourierOrderClosable(o.order_statuses?.name));
-    if (closable.length === 0) {
-      toast.error(`كل الأوردرات المختارة (${blocked.length}) حالتها نشطة. غيّر الحالة أولاً.`);
-      return;
-    }
-    const msg = blocked.length > 0
-      ? `سيتم تقفيل ${closable.length} أوردر فقط. (${blocked.length} حالتهم نشطة وسيتم تجاهلهم). متابعة؟`
-      : `تقفيل ${closable.length} أوردر؟`;
-    if (!confirm(msg)) return;
-    await supabase.from('orders').update({ is_courier_closed: true }).in('id', closable.map(o => o.id));
-    toast.success(`تم تقفيل ${closable.length} أوردر${blocked.length > 0 ? ` (تم تجاهل ${blocked.length})` : ''}`);
+    const ids = Array.from(selectedOrders);
+    if (!confirm(`تقفيل ${ids.length} أوردر؟`)) return;
+    await supabase.from('orders').update({ is_courier_closed: true }).in('id', ids);
+    toast.success(`تم تقفيل ${ids.length} أوردر`);
     loadCourierOrders();
   };
 
