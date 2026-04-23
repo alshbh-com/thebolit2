@@ -260,25 +260,26 @@ export default function CourierCollections() {
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="flex flex-wrap gap-2">
-                {statuses.map(s => (
-                  <Badge key={s.id}
-                    style={{ backgroundColor: commissionStatuses.includes(s.id) ? s.color : undefined }}
-                    variant={commissionStatuses.includes(s.id) ? 'default' : 'outline'}
-                    className="cursor-pointer"
-                    onClick={() => toggleStatus(s.id)}>
-                    {s.name}
-                  </Badge>
-                ))}
+              <div>
+                <p className="text-xs text-muted-foreground mb-2">
+                  ✅ العمولة بتتحسب أوتوماتيك على الحالات دي:
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {statuses.filter(s => COMMISSION_STATUS_NAMES.includes(s.name)).map(s => (
+                    <Badge key={s.id} style={{ backgroundColor: s.color }} className="text-white">
+                      ✓ {s.name}
+                    </Badge>
+                  ))}
+                </div>
               </div>
               <div className="flex gap-3 items-end">
                 <div className="space-y-1">
-                  <Label className="text-xs">مبلغ العمولة لكل أوردر (ج.م)</Label>
+                  <Label className="text-xs">عمولة المندوب لكل أوردر (ج.م) — من ملف المندوب</Label>
                   <Input type="number" value={commissionPerOrder} onChange={e => setCommissionPerOrder(e.target.value)}
                     className="w-40 bg-secondary border-border" placeholder="30"
                     onFocus={e => { if (e.target.value === '0') setCommissionPerOrder(''); }} />
                 </div>
-                <p className="text-sm">= {commissionTotal} ج.م ({eligibleOrders.length} أوردر)</p>
+                <p className="text-sm">= <span className="font-bold text-primary">{commissionTotal}</span> ج.م ({eligibleOrders.length} أوردر مؤهل)</p>
               </div>
             </CardContent>
           </Card>
