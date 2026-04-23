@@ -3,7 +3,7 @@ import {
   Truck, Wallet, CreditCard, ScrollText, Settings, LogOut, Archive, Building,
   PackageSearch, Search, Printer, DollarSign, MapPin, Users, BarChart3,
   TrendingUp, Calendar, UserCheck, MessageSquare, Locate, FileSpreadsheet,
-  CircleDot, Calculator, Contact, ClipboardList, Trash2, FileBarChart, Navigation2, BookOpen, Receipt
+  CircleDot, Calculator, Contact, ClipboardList, Trash2, FileBarChart, Navigation2, BookOpen, Receipt, Lock
 } from 'lucide-react';
 import logo from '@/assets/logo.jpg';
 import { NavLink } from '@/components/NavLink';
@@ -37,6 +37,7 @@ const managementItems = [
 
 const accountingItems = [
   { title: 'تحصيلات المندوبين', url: '/courier-collections', icon: Wallet },
+  { title: 'تقفيلة المناديب', url: '/courier-closures', icon: Lock },
   { title: 'حسابات المكاتب', url: '/office-accounts', icon: Building },
   { title: 'مصاريف المكتب اليومية', url: '/office-daily-expenses', icon: Receipt },
   { title: 'السلفات والخصومات', url: '/advances', icon: DollarSign },

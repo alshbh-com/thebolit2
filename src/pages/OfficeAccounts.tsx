@@ -339,13 +339,13 @@ export default function OfficeAccounts() {
       <td>${Number(o.price || 0) - Number(o.delivery_price || 0)}</td>
       <td>${statusName(o.status_id)}</td>
       <td>${getCourierName(o.courier_id)}</td>
-      <td style="text-align:center;font-weight:bold;color:${o.is_settled ? '#16a34a' : '#dc2626'}">${o.is_settled ? '✅ خالص' : '❌'}</td>
+      <td style="text-align:center;font-weight:bold;color:#16a34a">✅ خالص</td>
     </tr>`).join('');
 
     const totalPrice = filteredOrders.reduce((s, o) => s + Number(o.price || 0), 0);
     const totalShipping = filteredOrders.reduce((s, o) => s + Number(o.delivery_price || 0), 0);
     const totalNet = totalPrice - totalShipping;
-    const settledCount = filteredOrders.filter(o => o.is_settled).length;
+    const settledCount = filteredOrders.length; // PDF شامل: كل الأوردرات تظهر كخالص تلقائياً
 
     w.document.write(`<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8">
     <title>حسابات ${officeName}</title>

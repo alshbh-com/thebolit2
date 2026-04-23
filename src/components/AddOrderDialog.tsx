@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { logActivity } from '@/lib/activityLogger';
+import AutocompleteInput from '@/components/AutocompleteInput';
 
 interface Props {
   onOrderAdded: () => void;
@@ -25,6 +26,9 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
   const [offices, setOffices] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [statuses, setStatuses] = useState<any[]>([]);
+
+  // History for autocomplete
+  const [history, setHistory] = useState<any[]>([]);
 
   const emptyForm = {
     customer_name: '', customer_phone: '', customer_code: '',
@@ -59,8 +63,6 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
     if (!editOrder) return;
     setOpen(true);
     setDropdownsLoaded(false);
-    
-    // Load dropdowns FIRST, then set form values
     loadDropdowns(editOrder).then(() => {
       setForm(mapOrderToForm(editOrder));
       setDropdownsLoaded(true);
@@ -71,7 +73,18 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
     if (open && !editOrder) {
       loadDropdowns().then(() => setDropdownsLoaded(true));
     }
+    if (open) loadHistory();
   }, [open]);
+
+  const loadHistory = async () => {
+    // Load last 500 orders for suggestions
+    const { data } = await supabase
+      .from('orders')
+      .select('customer_name, customer_phone, customer_code, address, product_name, color, size, notes')
+      .order('created_at', { ascending: false })
+      .limit(500);
+    setHistory(data || []);
+  };
 
   const loadDropdowns = async (orderForEdit?: any) => {
     const [o, p, s] = await Promise.all([
@@ -83,7 +96,6 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
     const loadedOffices = o.data || [];
     const currentOfficeId = orderForEdit?.office_id;
 
-    // Ensure the current office is always in the list
     if (currentOfficeId && !loadedOffices.some((office: any) => office.id === currentOfficeId)) {
       loadedOffices.unshift({
         id: currentOfficeId,
@@ -94,6 +106,44 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
     setOffices(loadedOffices);
     setProducts(p.data || []);
     setStatuses(s.data || []);
+  };
+
+  // Build unique suggestion lists
+  const uniq = (arr: string[]) => Array.from(new Set(arr.filter(Boolean).map(s => String(s).trim()))).filter(Boolean);
+  const sugg = useMemo(() => ({
+    customer_name: uniq(history.map(h => h.customer_name)),
+    customer_phone: uniq(history.map(h => h.customer_phone)),
+    customer_code: uniq(history.map(h => h.customer_code)),
+    address: uniq(history.map(h => h.address)),
+    product_name: uniq([...history.map(h => h.product_name), ...products.map(p => p.name)]),
+    color: uniq(history.map(h => h.color)),
+    size: uniq(history.map(h => h.size)),
+    notes: uniq(history.map(h => h.notes)),
+  }), [history, products]);
+
+  // When a phone is picked, auto-fill name + address from latest match
+  const onPickPhone = (phone: string) => {
+    const match = history.find(h => h.customer_phone === phone);
+    if (match) {
+      setForm(f => ({
+        ...f,
+        customer_phone: phone,
+        customer_name: f.customer_name || match.customer_name || '',
+        address: f.address || match.address || '',
+      }));
+    }
+  };
+
+  const onPickName = (name: string) => {
+    const match = history.find(h => h.customer_name === name);
+    if (match) {
+      setForm(f => ({
+        ...f,
+        customer_name: name,
+        customer_phone: f.customer_phone || match.customer_phone || '',
+        address: f.address || match.address || '',
+      }));
+    }
   };
 
   const handleProductSelect = (productId: string) => {
@@ -195,18 +245,41 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>اسم العميل *</Label>
-              <Input required value={form.customer_name} onChange={e => set('customer_name', e.target.value)} className="bg-secondary border-border" placeholder="اسم العميل" />
+              <AutocompleteInput
+                value={form.customer_name}
+                onChange={v => set('customer_name', v)}
+                onPick={onPickName}
+                suggestions={sugg.customer_name}
+                className="bg-secondary border-border"
+                required
+                placeholder="اسم العميل"
+              />
             </div>
             <div className="space-y-2">
               <Label>رقم الهاتف *</Label>
-              <Input required value={form.customer_phone} onChange={e => set('customer_phone', e.target.value)} className="bg-secondary border-border" placeholder="01xxxxxxxxx" dir="ltr" />
+              <AutocompleteInput
+                value={form.customer_phone}
+                onChange={v => set('customer_phone', v)}
+                onPick={onPickPhone}
+                suggestions={sugg.customer_phone}
+                className="bg-secondary border-border"
+                required
+                placeholder="01xxxxxxxxx"
+                dir="ltr"
+              />
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>الكود (يدوي - اختياري)</Label>
-              <Input value={form.customer_code} onChange={e => set('customer_code', e.target.value)} className="bg-secondary border-border" placeholder="كود المكتب" />
+              <AutocompleteInput
+                value={form.customer_code}
+                onChange={v => set('customer_code', v)}
+                suggestions={sugg.customer_code}
+                className="bg-secondary border-border"
+                placeholder="كود المكتب"
+              />
             </div>
             <div className="space-y-2">
               <Label>المكتب *</Label>
@@ -224,7 +297,13 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
 
           <div className="space-y-2">
             <Label>العنوان</Label>
-            <Input value={form.address} onChange={e => set('address', e.target.value)} className="bg-secondary border-border" placeholder="العنوان بالتفصيل" />
+            <AutocompleteInput
+              value={form.address}
+              onChange={v => set('address', v)}
+              suggestions={sugg.address}
+              className="bg-secondary border-border"
+              placeholder="العنوان بالتفصيل"
+            />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -239,7 +318,13 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
             </div>
             <div className="space-y-2">
               <Label>أو اكتب اسم المنتج</Label>
-              <Input value={form.product_name} onChange={e => set('product_name', e.target.value)} className="bg-secondary border-border" placeholder="اسم المنتج يدوي" />
+              <AutocompleteInput
+                value={form.product_name}
+                onChange={v => set('product_name', v)}
+                suggestions={sugg.product_name}
+                className="bg-secondary border-border"
+                placeholder="اسم المنتج يدوي"
+              />
             </div>
           </div>
 
@@ -290,13 +375,23 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
             </div>
             <div className="space-y-2">
               <Label>اللون</Label>
-              <Input value={form.color} onChange={e => set('color', e.target.value)} className="bg-secondary border-border" />
+              <AutocompleteInput
+                value={form.color}
+                onChange={v => set('color', v)}
+                suggestions={sugg.color}
+                className="bg-secondary border-border"
+              />
             </div>
           </div>
 
           <div className="space-y-2">
             <Label>المقاس</Label>
-            <Input value={form.size} onChange={e => set('size', e.target.value)} className="bg-secondary border-border" />
+            <AutocompleteInput
+              value={form.size}
+              onChange={v => set('size', v)}
+              suggestions={sugg.size}
+              className="bg-secondary border-border"
+            />
           </div>
 
           <div className="space-y-2">
