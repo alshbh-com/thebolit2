@@ -38,7 +38,7 @@ export default function CourierCollections() {
     const load = async () => {
       const { data: roles } = await supabase.from('user_roles').select('user_id').eq('role', 'courier');
       if (roles && roles.length > 0) {
-        const { data: profiles } = await supabase.from('profiles').select('id, full_name').in('id', roles.map(r => r.user_id));
+        const { data: profiles } = await supabase.from('profiles').select('id, full_name, commission_amount').in('id', roles.map(r => r.user_id));
         setCouriers(profiles || []);
       }
       const { data: sts } = await supabase.from('order_statuses').select('*').order('sort_order');
@@ -48,6 +48,22 @@ export default function CourierCollections() {
     };
     load();
   }, []);
+
+  // Auto-select commission-eligible statuses when statuses load
+  const COMMISSION_STATUS_NAMES = ['تم التسليم', 'تسليم جزئي', 'رفض ودفع شحن', 'استلم ودفع نص الشحن'];
+  useEffect(() => {
+    if (statuses.length === 0) return;
+    const autoIds = statuses.filter(s => COMMISSION_STATUS_NAMES.includes(s.name)).map(s => s.id);
+    setCommissionStatuses(autoIds);
+  }, [statuses]);
+
+  // Auto-fill commission rate from courier profile
+  useEffect(() => {
+    if (!selectedCourier) return;
+    const c = couriers.find(c => c.id === selectedCourier);
+    const rate = Number(c?.commission_amount || 0);
+    if (rate > 0) setCommissionPerOrder(String(rate));
+  }, [selectedCourier, couriers]);
 
   useEffect(() => {
     if (selectedCourier) loadCourierData();
@@ -244,25 +260,26 @@ export default function CourierCollections() {
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="flex flex-wrap gap-2">
-                {statuses.map(s => (
-                  <Badge key={s.id}
-                    style={{ backgroundColor: commissionStatuses.includes(s.id) ? s.color : undefined }}
-                    variant={commissionStatuses.includes(s.id) ? 'default' : 'outline'}
-                    className="cursor-pointer"
-                    onClick={() => toggleStatus(s.id)}>
-                    {s.name}
-                  </Badge>
-                ))}
+              <div>
+                <p className="text-xs text-muted-foreground mb-2">
+                  ✅ العمولة بتتحسب أوتوماتيك على الحالات دي:
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {statuses.filter(s => COMMISSION_STATUS_NAMES.includes(s.name)).map(s => (
+                    <Badge key={s.id} style={{ backgroundColor: s.color }} className="text-white">
+                      ✓ {s.name}
+                    </Badge>
+                  ))}
+                </div>
               </div>
               <div className="flex gap-3 items-end">
                 <div className="space-y-1">
-                  <Label className="text-xs">مبلغ العمولة لكل أوردر (ج.م)</Label>
+                  <Label className="text-xs">عمولة المندوب لكل أوردر (ج.م) — من ملف المندوب</Label>
                   <Input type="number" value={commissionPerOrder} onChange={e => setCommissionPerOrder(e.target.value)}
                     className="w-40 bg-secondary border-border" placeholder="30"
                     onFocus={e => { if (e.target.value === '0') setCommissionPerOrder(''); }} />
                 </div>
-                <p className="text-sm">= {commissionTotal} ج.م ({eligibleOrders.length} أوردر)</p>
+                <p className="text-sm">= <span className="font-bold text-primary">{commissionTotal}</span> ج.م ({eligibleOrders.length} أوردر مؤهل)</p>
               </div>
             </CardContent>
           </Card>
