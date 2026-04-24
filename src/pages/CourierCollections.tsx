@@ -9,11 +9,12 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Trash2, Lock, Search } from 'lucide-react';
+import { Plus, Trash2, Lock, Search, FileBarChart } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { logActivity } from '@/lib/activityLogger';
 import { getHiddenActiveCourierOrderIds, isCourierOrderClosable } from '@/lib/courierClosure';
+import { ReportButton } from '@/components/ReportButton';
 
 export default function CourierCollections() {
   const { user, isOwner } = useAuth();
