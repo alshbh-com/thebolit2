@@ -37,7 +37,6 @@ const managementItems = [
 
 const accountingItems = [
   { title: 'تحصيلات المندوبين', url: '/courier-collections', icon: Wallet },
-  { title: 'تقفيلة المناديب', url: '/courier-closures', icon: Lock },
   { title: 'حسابات المكاتب', url: '/office-accounts', icon: Building },
   { title: 'مصاريف المكتب اليومية', url: '/office-daily-expenses', icon: Receipt },
   { title: 'السلفات والخصومات', url: '/advances', icon: DollarSign },
