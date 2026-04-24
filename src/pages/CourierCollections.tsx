@@ -351,6 +351,143 @@ export default function CourierCollections() {
             </Card>
           )}
 
+          {/* === تقفيلة المندوب (Closure Report) === */}
+          {(() => {
+            const courier = couriers.find(c => c.id === selectedCourier);
+            const commissionRate = parseFloat(commissionPerOrder) || Number(courier?.commission_amount || 0);
+            const COMMISSION_NAMES = COMMISSION_STATUS_NAMES;
+            const getCollected = (o: any) => {
+              const sn = o.order_statuses?.name;
+              if (sn === 'تم التسليم') return Number(o.price || 0) + Number(o.delivery_price || 0);
+              if (sn === 'تسليم جزئي') return Number(o.partial_amount || 0);
+              if (sn === 'رفض ودفع شحن' || sn === 'استلم ودفع نص الشحن') return Number(o.shipping_paid || 0);
+              return 0;
+            };
+            const closedCount = closedOrdersOnDate.length;
+            const closedCollected = closedOrdersOnDate.reduce((s, o) => s + getCollected(o), 0);
+            const closedCommissionable = closedOrdersOnDate.filter(o => COMMISSION_NAMES.includes(o.order_statuses?.name)).length;
+            const closedCommission = closedCommissionable * commissionRate;
+            const closedNet = closedCollected - closedCommission;
+            const remaining = orders.length;
+            const remainingValue = orders.reduce((s, o) => s + getCollected(o), 0);
+            const nowStr = new Date().toLocaleString('ar-EG');
+
+            const closureColumns = [
+              { key: 'barcode', label: 'الباركود' },
+              { key: 'customer_name', label: 'العميل' },
+              { key: 'customer_phone', label: 'الهاتف' },
+              { key: 'address', label: 'العنوان' },
+              { key: 'office_name', label: 'المكتب', format: (_: any, r: any) => r.offices?.name || '-' },
+              { key: 'price', label: 'سعر المنتج', format: (v: any) => `${Number(v || 0)} ج.م` },
+              { key: 'delivery_price', label: 'الشحن', format: (v: any) => `${Number(v || 0)} ج.م` },
+              { key: 'status', label: 'الحالة', format: (_: any, r: any) => r.order_statuses?.name || '-' },
+              { key: 'collected', label: 'المحصل', format: (_: any, r: any) => `${getCollected(r)} ج.م` },
+              { key: 'commission', label: 'عمولة المندوب', format: (_: any, r: any) =>
+                COMMISSION_NAMES.includes(r.order_statuses?.name) ? `${commissionRate} ج.م` : '-'
+              },
+              { key: 'closed_time', label: 'وقت التقفيل', format: (_: any, r: any) =>
+                new Date(r.closed_at || r.updated_at).toLocaleString('ar-EG', { hour: '2-digit', minute: '2-digit' })
+              },
+            ];
+
+            const closureMeta = {
+              title: `تقفيلة المندوب — ${courier?.full_name || ''}`,
+              subtitle: `يوم التقفيل: ${closureDate} | المقفل: ${closedCount} | تم الإصدار: ${nowStr}`,
+              filtersText: `المندوب: ${courier?.full_name || '-'} | اليوم: ${closureDate}`,
+              summary: [
+                { label: '📦 أوردرات مقفلة اليوم', value: closedCount },
+                { label: '💰 إجمالي المحصل', value: `${closedCollected.toLocaleString()} ج.م` },
+                { label: `🎯 عمولة المندوب (${commissionRate} لكل أوردر)`, value: `${closedCommission.toLocaleString()} ج.م` },
+                { label: '✅ صافي المستحق للشركة', value: `${closedNet.toLocaleString()} ج.م` },
+                { label: '⏳ متبقي على المندوب (لم يتقفل)', value: `${remaining} أوردر` },
+                { label: '💵 قيمة المتبقي', value: `${remainingValue.toLocaleString()} ج.م` },
+                { label: '🕒 تاريخ ووقت إصدار التقرير', value: nowStr },
+              ],
+            };
+
+            return (
+              <Card className="bg-card border-border border-2 border-primary/30">
+                <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <FileBarChart className="h-5 w-5 text-primary" />
+                    تقفيلة المندوب — تقرير حسب اليوم
+                  </CardTitle>
+                  <div className="flex items-end gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-xs">يوم التقفيل</Label>
+                      <Input type="date" value={closureDate} onChange={e => setClosureDate(e.target.value)}
+                        className="w-44 bg-secondary border-border h-8" />
+                    </div>
+                    {closedOrdersOnDate.length > 0 && (
+                      <ReportButton meta={closureMeta} columns={closureColumns} rows={closedOrdersOnDate}
+                        whatsappPhone={courier?.phone} label="طباعة / تصدير" />
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    <div className="rounded-md bg-emerald-50 border border-emerald-200 p-2 text-center">
+                      <p className="text-xs text-emerald-700">مقفل اليوم</p>
+                      <p className="text-xl font-bold text-emerald-700">{closedCount}</p>
+                    </div>
+                    <div className="rounded-md bg-primary/10 border border-primary/30 p-2 text-center">
+                      <p className="text-xs text-primary">المحصل</p>
+                      <p className="text-base font-bold text-primary">{closedCollected.toLocaleString()} ج.م</p>
+                    </div>
+                    <div className="rounded-md bg-sky-50 border border-sky-200 p-2 text-center">
+                      <p className="text-xs text-sky-700">عمولة المندوب</p>
+                      <p className="text-base font-bold text-sky-700">{closedCommission.toLocaleString()} ج.م</p>
+                    </div>
+                    <div className="rounded-md bg-amber-50 border border-amber-200 p-2 text-center">
+                      <p className="text-xs text-amber-700">صافي للشركة</p>
+                      <p className="text-base font-bold text-amber-700">{closedNet.toLocaleString()} ج.م</p>
+                    </div>
+                  </div>
+                  <div className="rounded-md bg-rose-50 border border-rose-200 p-2 text-sm text-rose-700 flex items-center justify-between flex-wrap gap-1">
+                    <span>متبقي على المندوب: <b className="text-base">{remaining}</b> أوردر</span>
+                    <span>قيمتهم: <b className="text-base">{remainingValue.toLocaleString()}</b> ج.م</span>
+                  </div>
+                  {closedOrdersOnDate.length === 0 ? (
+                    <p className="text-center text-muted-foreground text-sm py-3">لا توجد أوردرات مقفلة في {closureDate}</p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader><TableRow className="border-border">
+                          <TableHead className="text-right">#</TableHead>
+                          <TableHead className="text-right">الباركود</TableHead>
+                          <TableHead className="text-right">العميل</TableHead>
+                          <TableHead className="text-right">المكتب</TableHead>
+                          <TableHead className="text-right">الحالة</TableHead>
+                          <TableHead className="text-right">المحصل</TableHead>
+                          <TableHead className="text-right">عمولة</TableHead>
+                          <TableHead className="text-right">وقت التقفيل</TableHead>
+                        </TableRow></TableHeader>
+                        <TableBody>
+                          {closedOrdersOnDate.map((o, i) => {
+                            const sn = o.order_statuses?.name;
+                            const isComm = COMMISSION_NAMES.includes(sn);
+                            return (
+                              <TableRow key={o.id} className="border-border">
+                                <TableCell>{i + 1}</TableCell>
+                                <TableCell className="font-mono text-xs">{o.barcode || '-'}</TableCell>
+                                <TableCell className="text-sm">{o.customer_name}</TableCell>
+                                <TableCell className="text-xs">{o.offices?.name || '-'}</TableCell>
+                                <TableCell><Badge style={{ backgroundColor: o.order_statuses?.color }} className="text-xs text-white">{sn || '-'}</Badge></TableCell>
+                                <TableCell className="font-bold text-emerald-600">{getCollected(o)} ج.م</TableCell>
+                                <TableCell className="font-bold text-sky-600">{isComm ? `${commissionRate} ج.م` : '-'}</TableCell>
+                                <TableCell className="text-xs text-muted-foreground">{new Date(o.closed_at || o.updated_at).toLocaleString('ar-EG', { hour: '2-digit', minute: '2-digit' })}</TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })()}
+
           {/* Search and Status Filters */}
           <Card className="bg-card border-border">
             <CardContent className="p-3 space-y-3">
