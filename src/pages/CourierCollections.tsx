@@ -101,6 +101,35 @@ export default function CourierCollections() {
     setBonuses(bonusData || []);
   };
 
+  // Load closed orders for the selected courier on the selected date
+  useEffect(() => {
+    if (!selectedCourier) { setClosedOrdersOnDate([]); return; }
+    (async () => {
+      const dayStart = `${closureDate}T00:00:00`;
+      const dayEnd = `${closureDate}T23:59:59.999`;
+      // Use closed_at if present, fallback to updated_at — fixes "closed but doesn't show"
+      const { data: byClosedAt } = await supabase
+        .from('orders')
+        .select('*, order_statuses(name, color), offices(name)')
+        .eq('courier_id', selectedCourier)
+        .eq('is_courier_closed', true)
+        .gte('closed_at', dayStart)
+        .lte('closed_at', dayEnd);
+      const { data: byUpdatedAt } = await supabase
+        .from('orders')
+        .select('*, order_statuses(name, color), offices(name)')
+        .eq('courier_id', selectedCourier)
+        .eq('is_courier_closed', true)
+        .is('closed_at', null)
+        .gte('updated_at', dayStart)
+        .lte('updated_at', dayEnd);
+      const merged = [...(byClosedAt || []), ...(byUpdatedAt || [])];
+      const seen = new Set<string>();
+      const dedup = merged.filter(o => seen.has(o.id) ? false : (seen.add(o.id), true));
+      setClosedOrdersOnDate(dedup);
+    })();
+  }, [selectedCourier, closureDate]);
+
   const deliveredStatus = statuses.find(s => s.name === 'تم التسليم');
   const rejectWithShipStatus = statuses.find(s => s.name === 'رفض ودفع شحن');
   const halfShipStatus = statuses.find(s => s.name === 'استلم ودفع نص الشحن');
