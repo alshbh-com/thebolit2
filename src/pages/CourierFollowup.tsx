@@ -40,15 +40,17 @@ function normalizeEgPhone(raw?: string): string | null {
 }
 
 function buildMessage(template: string, order: Order, statusName: string, courierName: string) {
-  return template
-    .replaceAll('{customer_name}', order.customer_name || 'حضرتك')
-    .replaceAll('{barcode}', order.barcode || order.tracking_id || '')
-    .replaceAll('{product_name}', order.product_name || '')
-    .replaceAll('{price}', String(order.price ?? ''))
-    .replaceAll('{address}', order.address || '')
-    .replaceAll('{status}', statusName || '')
-    .replaceAll('{courier}', courierName || '')
-    .replaceAll('{notes}', order.notes || '');
+  const repl = (s: string, k: string, v: string) => s.split(k).join(v);
+  let r = template;
+  r = repl(r, '{customer_name}', order.customer_name || 'حضرتك');
+  r = repl(r, '{barcode}', order.barcode || order.tracking_id || '');
+  r = repl(r, '{product_name}', order.product_name || '');
+  r = repl(r, '{price}', String(order.price ?? ''));
+  r = repl(r, '{address}', order.address || '');
+  r = repl(r, '{status}', statusName || '');
+  r = repl(r, '{courier}', courierName || '');
+  r = repl(r, '{notes}', order.notes || '');
+  return r;
 }
 
 export default function CourierFollowup() {
