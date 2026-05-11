@@ -17,9 +17,11 @@ interface Order {
   id: string; barcode?: string; tracking_id?: string;
   customer_name?: string; customer_phone?: string; address?: string;
   product_name?: string; price?: number; quantity?: number;
+  delivery_price?: number; office_id?: string;
   status_id?: string; courier_id?: string; notes?: string;
   is_closed?: boolean; is_courier_closed?: boolean;
 }
+interface Office { id: string; name: string; owner_name?: string; }
 
 const DEFAULT_TEMPLATE = `السلام عليكم {customer_name} 🌷
 معاك متابعة شركة The Pilito بخصوص أوردر رقم {barcode}
@@ -57,6 +59,7 @@ function buildMessage(template: string, order: Order, statusName: string, courie
 
 export default function CourierFollowup() {
   const [couriers, setCouriers] = useState<Courier[]>([]);
+  const [offices, setOffices] = useState<Office[]>([]);
   const [statuses, setStatuses] = useState<any[]>([]);
   const [selectedCourier, setSelectedCourier] = useState('');
   const [orders, setOrders] = useState<Order[]>([]);
@@ -81,6 +84,8 @@ export default function CourierFollowup() {
       }
       const { data: sts } = await supabase.from('order_statuses').select('*').order('sort_order');
       setStatuses(sts || []);
+      const { data: offs } = await supabase.from('offices').select('id, name, owner_name');
+      setOffices((offs || []) as Office[]);
     };
     load();
   }, []);
@@ -108,6 +113,8 @@ export default function CourierFollowup() {
 
   const statusName = (id?: string) => statuses.find(s => s.id === id)?.name || '—';
   const statusColor = (id?: string) => statuses.find(s => s.id === id)?.color || '#6b7280';
+  const officeName = (id?: string) => offices.find(o => o.id === id)?.name || '—';
+  const officeOwner = (id?: string) => offices.find(o => o.id === id)?.owner_name || '';
   const courierName = useMemo(() => couriers.find(c => c.id === selectedCourier)?.full_name || '', [couriers, selectedCourier]);
   const courierPhone = useMemo(() => couriers.find(c => c.id === selectedCourier)?.phone || '', [couriers, selectedCourier]);
 
@@ -234,7 +241,10 @@ export default function CourierFollowup() {
                   <TableHead>التليفون</TableHead>
                   <TableHead>العنوان</TableHead>
                   <TableHead>المنتج</TableHead>
-                  <TableHead>المبلغ</TableHead>
+                  <TableHead>السعر</TableHead>
+                  <TableHead>الشحن</TableHead>
+                  <TableHead>الإجمالي</TableHead>
+                  <TableHead>المكتب</TableHead>
                   <TableHead>الحالة</TableHead>
                   <TableHead>ملاحظة المتابعة</TableHead>
                   <TableHead>إجراءات</TableHead>
@@ -242,15 +252,23 @@ export default function CourierFollowup() {
               </TableHeader>
               <TableBody>
                 {filtered.length === 0 ? (
-                  <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-6">لا توجد أوردرات</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={12} className="text-center text-muted-foreground py-6">لا توجد أوردرات</TableCell></TableRow>
                 ) : filtered.map(o => (
                   <TableRow key={o.id}>
                     <TableCell className="font-mono">{o.barcode}</TableCell>
-                    <TableCell>{o.customer_name}</TableCell>
+                    <TableCell className="font-medium">{o.customer_name}</TableCell>
                     <TableCell className="font-mono" dir="ltr">{o.customer_phone}</TableCell>
                     <TableCell className="max-w-[220px] whitespace-normal">{o.address}</TableCell>
                     <TableCell>{o.product_name}</TableCell>
-                    <TableCell>{o.price} ج</TableCell>
+                    <TableCell>{Number(o.price || 0)} ج</TableCell>
+                    <TableCell>{Number(o.delivery_price || 0)} ج</TableCell>
+                    <TableCell className="font-semibold">{Number(o.price || 0) + Number(o.delivery_price || 0)} ج</TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        <div className="font-medium">{officeName(o.office_id)}</div>
+                        {officeOwner(o.office_id) && <div className="text-xs text-muted-foreground">{officeOwner(o.office_id)}</div>}
+                      </div>
+                    </TableCell>
                     <TableCell>
                       <Badge style={{ backgroundColor: statusColor(o.status_id), color: 'white' }}>
                         {statusName(o.status_id)}
