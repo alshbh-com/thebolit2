@@ -692,10 +692,37 @@ export default function OfficeAccounts() {
                         <TableCell className="text-sm text-blue-500 font-bold">{officeRate} ج.م</TableCell>
                         <TableCell className="text-sm font-bold text-primary">{net} ج.م</TableCell>
                         <TableCell>
-                          {status ? <Badge style={{ backgroundColor: status.color }} className="text-xs">{status.name}</Badge> : '-'}
+                          <div className="flex flex-col gap-1">
+                            {status ? <Badge style={{ backgroundColor: status.color }} className="text-xs">{status.name}</Badge> : '-'}
+                            {o.returned_to_sender && <Badge className="text-[10px] bg-rose-600 hover:bg-rose-700 text-white">تم ارتجاعه للراسل</Badge>}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            size="sm"
+                            variant={o.returned_to_sender ? 'default' : 'outline'}
+                            className={`text-xs h-7 px-2 ${o.returned_to_sender ? 'bg-rose-600 hover:bg-rose-700 text-white' : ''}`}
+                            onClick={() => toggleReturnedToSender(o.id, !o.returned_to_sender)}
+                          >
+                            {o.returned_to_sender ? '↩ تم الارتجاع' : 'ارتجاع للراسل'}
+                          </Button>
+                          {o.returned_to_sender && o.returned_to_sender_at && (
+                            <div className="text-[10px] text-muted-foreground mt-1">
+                              {new Date(o.returned_to_sender_at).toLocaleDateString('ar-EG')}
+                              {o.returned_to_sender_by && ` • ${allUsers[o.returned_to_sender_by] || ''}`}
+                            </div>
+                          )}
                         </TableCell>
                         <TableCell className="text-sm">{getCourierName(o.courier_id)}</TableCell>
                         <TableCell className="text-xs hidden sm:table-cell">{createdDate}</TableCell>
+                        <TableCell className="text-xs hidden md:table-cell">
+                          {o.last_modified_by && (
+                            <div>آخر تعديل: <span className="font-medium">{allUsers[o.last_modified_by] || '—'}</span></div>
+                          )}
+                          {o.closed_by && (
+                            <div className="text-rose-600">قفل بواسطة: <span className="font-medium">{allUsers[o.closed_by] || '—'}</span></div>
+                          )}
+                        </TableCell>
                         <TableCell>
                           <Button size="sm" variant={o.is_settled ? 'default' : 'outline'} className={`text-xs h-6 px-2 ${o.is_settled ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : ''}`} onClick={() => toggleSettled(o.id, !o.is_settled)}>
                             {o.is_settled ? '✓ خالص' : 'خالص'}
