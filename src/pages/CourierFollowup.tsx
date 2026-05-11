@@ -59,6 +59,7 @@ function buildMessage(template: string, order: Order, statusName: string, courie
 
 export default function CourierFollowup() {
   const [couriers, setCouriers] = useState<Courier[]>([]);
+  const [offices, setOffices] = useState<Office[]>([]);
   const [statuses, setStatuses] = useState<any[]>([]);
   const [selectedCourier, setSelectedCourier] = useState('');
   const [orders, setOrders] = useState<Order[]>([]);
