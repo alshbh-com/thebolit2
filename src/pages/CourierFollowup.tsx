@@ -26,8 +26,11 @@ interface Office { id: string; name: string; owner_name?: string; }
 const DEFAULT_TEMPLATE = `السلام عليكم {customer_name} 🌷
 معاك متابعة شركة The Pilito بخصوص أوردر رقم {barcode}
 المنتج: {product_name}
-المبلغ المطلوب: {price} جنيه
+سعر المنتج: {price} جنيه
+سعر الشحن: {shipping} جنيه
+الإجمالي المطلوب: {total} جنيه
 العنوان: {address}
+المكتب: {office}
 المندوب المسؤول: {courier} - رقمه: {courier_phone}
 يرجى التواصل مع المندوب مباشرة لتأكيد الاستلام. شكراً 🙏`;
 
@@ -42,14 +45,19 @@ function normalizeEgPhone(raw?: string): string | null {
   return p;
 }
 
-function buildMessage(template: string, order: Order, statusName: string, courierName: string, courierPhone: string) {
+function buildMessage(template: string, order: Order, statusName: string, courierName: string, courierPhone: string, officeName: string) {
   const repl = (s: string, k: string, v: string) => s.split(k).join(v);
+  const price = Number(order.price || 0);
+  const shipping = Number(order.delivery_price || 0);
   let r = template;
   r = repl(r, '{customer_name}', order.customer_name || 'حضرتك');
   r = repl(r, '{barcode}', order.barcode || order.tracking_id || '');
   r = repl(r, '{product_name}', order.product_name || '');
-  r = repl(r, '{price}', String(order.price ?? ''));
+  r = repl(r, '{price}', String(price));
+  r = repl(r, '{shipping}', String(shipping));
+  r = repl(r, '{total}', String(price + shipping));
   r = repl(r, '{address}', order.address || '');
+  r = repl(r, '{office}', officeName || '');
   r = repl(r, '{status}', statusName || '');
   r = repl(r, '{courier}', courierName || '');
   r = repl(r, '{courier_phone}', courierPhone || '');
@@ -143,14 +151,14 @@ export default function CourierFollowup() {
       toast.error('رقم العميل غير صالح');
       return;
     }
-    const msg = buildMessage(template, order, statusName(order.status_id), courierName, courierPhone);
+    const msg = buildMessage(template, order, statusName(order.status_id), courierName, courierPhone, officeName(order.office_id));
     const url = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
     window.open(url, '_blank');
   };
 
   const openPreview = (order: Order) => {
     setActiveOrder(order);
-    setPreviewText(buildMessage(template, order, statusName(order.status_id), courierName, courierPhone));
+    setPreviewText(buildMessage(template, order, statusName(order.status_id), courierName, courierPhone, officeName(order.office_id)));
     setPreviewOpen(true);
   };
 
