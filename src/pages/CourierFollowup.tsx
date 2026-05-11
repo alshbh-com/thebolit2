@@ -277,10 +277,30 @@ export default function CourierFollowup() {
                         {officeOwner(o.office_id) && <div className="text-xs text-muted-foreground">{officeOwner(o.office_id)}</div>}
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <Badge style={{ backgroundColor: statusColor(o.status_id), color: 'white' }}>
-                        {statusName(o.status_id)}
-                      </Badge>
+                    <TableCell className="min-w-[160px]">
+                      <Select
+                        value={o.status_id || ''}
+                        onValueChange={async (val) => {
+                          const { error } = await supabase.from('orders').update({ status_id: val }).eq('id', o.id);
+                          if (error) { toast.error('فشل تحديث الحالة'); return; }
+                          toast.success('تم تحديث حالة الأوردر');
+                          setOrders(prev => prev.map(x => x.id === o.id ? { ...x, status_id: val } : x));
+                        }}
+                      >
+                        <SelectTrigger className="h-8" style={{ borderColor: statusColor(o.status_id) }}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {statuses.map(s => (
+                            <SelectItem key={s.id} value={s.id}>
+                              <span className="inline-flex items-center gap-2">
+                                <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: s.color }} />
+                                {s.name}
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </TableCell>
                     <TableCell className="min-w-[180px]">
                       <Input
