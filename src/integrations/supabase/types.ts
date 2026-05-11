@@ -709,9 +709,11 @@ export type Database = {
           address: string | null
           barcode: string | null
           closed_at: string | null
+          closed_by: string | null
           color: string | null
           company_id: string | null
           courier_assigned_at: string | null
+          courier_closed_by: string | null
           courier_id: string | null
           created_at: string
           customer_code: string | null
@@ -722,6 +724,7 @@ export type Database = {
           is_closed: boolean | null
           is_courier_closed: boolean | null
           is_settled: boolean | null
+          last_modified_by: string | null
           notes: string | null
           office_id: string | null
           partial_amount: number | null
@@ -730,6 +733,9 @@ export type Database = {
           product_id: string | null
           product_name: string | null
           quantity: number | null
+          returned_to_sender: boolean
+          returned_to_sender_at: string | null
+          returned_to_sender_by: string | null
           shipping_paid: number | null
           size: string | null
           status_id: string | null
@@ -740,9 +746,11 @@ export type Database = {
           address?: string | null
           barcode?: string | null
           closed_at?: string | null
+          closed_by?: string | null
           color?: string | null
           company_id?: string | null
           courier_assigned_at?: string | null
+          courier_closed_by?: string | null
           courier_id?: string | null
           created_at?: string
           customer_code?: string | null
@@ -753,6 +761,7 @@ export type Database = {
           is_closed?: boolean | null
           is_courier_closed?: boolean | null
           is_settled?: boolean | null
+          last_modified_by?: string | null
           notes?: string | null
           office_id?: string | null
           partial_amount?: number | null
@@ -761,6 +770,9 @@ export type Database = {
           product_id?: string | null
           product_name?: string | null
           quantity?: number | null
+          returned_to_sender?: boolean
+          returned_to_sender_at?: string | null
+          returned_to_sender_by?: string | null
           shipping_paid?: number | null
           size?: string | null
           status_id?: string | null
@@ -771,9 +783,11 @@ export type Database = {
           address?: string | null
           barcode?: string | null
           closed_at?: string | null
+          closed_by?: string | null
           color?: string | null
           company_id?: string | null
           courier_assigned_at?: string | null
+          courier_closed_by?: string | null
           courier_id?: string | null
           created_at?: string
           customer_code?: string | null
@@ -784,6 +798,7 @@ export type Database = {
           is_closed?: boolean | null
           is_courier_closed?: boolean | null
           is_settled?: boolean | null
+          last_modified_by?: string | null
           notes?: string | null
           office_id?: string | null
           partial_amount?: number | null
@@ -792,6 +807,9 @@ export type Database = {
           product_id?: string | null
           product_name?: string | null
           quantity?: number | null
+          returned_to_sender?: boolean
+          returned_to_sender_at?: string | null
+          returned_to_sender_by?: string | null
           shipping_paid?: number | null
           size?: string | null
           status_id?: string | null
