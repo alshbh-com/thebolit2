@@ -36,6 +36,7 @@ import DailyReport from "@/pages/DailyReport";
 import ProfitReport from "@/pages/ProfitReport";
 import TripsReport from "@/pages/TripsReport";
 import CourierReceipt from "@/pages/CourierReceipt";
+import CourierMonthlyReport from "@/pages/CourierMonthlyReport";
 
 import StatusManagement from "@/pages/StatusManagement";
 import OrderNotes from "@/pages/OrderNotes";
@@ -121,6 +122,7 @@ const App = () => (
               <Route path="/profit-report" element={<ProfitReport />} />
               <Route path="/trips-report" element={<TripsReport />} />
               <Route path="/courier-receipt" element={<CourierReceipt />} />
+              <Route path="/courier-monthly-report" element={<CourierMonthlyReport />} />
               
               <Route path="/status-management" element={<StatusManagement />} />
               <Route path="/order-notes" element={<OrderNotes />} />

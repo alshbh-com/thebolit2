@@ -47,6 +47,7 @@ const reportsItems = [
   { title: 'التقرير اليومي', url: '/daily-report', icon: Calendar },
   { title: 'تقرير الرحلات', url: '/trips-report', icon: FileBarChart },
   { title: 'إقرار المندوبين', url: '/courier-receipt', icon: ClipboardList },
+  { title: 'جرد المندوبين (شهري)', url: '/courier-monthly-report', icon: Calculator },
   { title: 'التقارير المالية', url: '/financial-reports', icon: BarChart3 },
   { title: 'تقرير المكاتب الجديد', url: '/office-report', icon: FileBarChart },
   { title: 'إحصائيات المناديب', url: '/courier-stats', icon: UserCheck },

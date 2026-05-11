@@ -38,6 +38,7 @@ export const ALL_SECTIONS = [
   { key: 'profit-report', label: 'تقرير الأرباح', url: '/profit-report' },
   { key: 'trips-report', label: 'تقرير الرحلات', url: '/trips-report' },
   { key: 'courier-receipt', label: 'إقرار المندوبين', url: '/courier-receipt' },
+  { key: 'courier-monthly-report', label: 'جرد المندوبين الشهري', url: '/courier-monthly-report' },
   { key: 'tracking', label: 'تتبع الشحنات', url: '/tracking' },
   { key: 'print', label: 'الطباعة', url: '/print' },
   { key: 'order-notes', label: 'ملاحظات الأوردرات', url: '/order-notes' },
