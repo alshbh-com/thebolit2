@@ -17,9 +17,11 @@ interface Order {
   id: string; barcode?: string; tracking_id?: string;
   customer_name?: string; customer_phone?: string; address?: string;
   product_name?: string; price?: number; quantity?: number;
+  delivery_price?: number; office_id?: string;
   status_id?: string; courier_id?: string; notes?: string;
   is_closed?: boolean; is_courier_closed?: boolean;
 }
+interface Office { id: string; name: string; owner_name?: string; }
 
 const DEFAULT_TEMPLATE = `السلام عليكم {customer_name} 🌷
 معاك متابعة شركة The Pilito بخصوص أوردر رقم {barcode}
