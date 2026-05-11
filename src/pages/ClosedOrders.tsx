@@ -131,11 +131,12 @@ export default function ClosedOrders() {
                    <TableHead className="text-right hidden md:table-cell">المكتب</TableHead>
                    <TableHead className="text-right hidden sm:table-cell">المندوب</TableHead>
                    <TableHead className="text-right">الحالة</TableHead>
+                   <TableHead className="text-right hidden md:table-cell">تم القفل بواسطة</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filtered.length === 0 ? (
-                  <TableRow><TableCell colSpan={isOwner ? 10 : 9} className="text-center text-muted-foreground py-8">لا توجد أوردرات مقفلة</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={isOwner ? 11 : 10} className="text-center text-muted-foreground py-8">لا توجد أوردرات مقفلة</TableCell></TableRow>
                 ) : filtered.map(order => (
                   <TableRow key={order.id} className="border-border">
                     {isOwner && <TableCell><Checkbox checked={selected.has(order.id)} onCheckedChange={() => toggleSelect(order.id)} /></TableCell>}
@@ -151,6 +152,10 @@ export default function ClosedOrders() {
                       <Badge style={{ backgroundColor: order.order_statuses?.color || undefined }} className="text-xs">
                         {order.order_statuses?.name || '-'}
                       </Badge>
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell text-xs">
+                      <div className="font-medium">{order.closed_by ? (couriers[order.closed_by] || '—') : '—'}</div>
+                      {order.closed_at && <div className="text-muted-foreground">{new Date(order.closed_at).toLocaleString('ar-EG')}</div>}
                     </TableCell>
                   </TableRow>
                 ))}

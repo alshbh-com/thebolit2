@@ -28,6 +28,7 @@ export default function OfficeAccounts() {
   const [payments, setPayments] = useState<any[]>([]);
   const [officeOrders, setOfficeOrders] = useState<any[]>([]);
   const [couriers, setCouriers] = useState<any[]>([]);
+  const [allUsers, setAllUsers] = useState<Record<string, string>>({});
   const [searchQuery, setSearchQuery] = useState('');
   const [courierCommissionRate, setCourierCommissionRate] = useState('');
   const [officeCommissionRate, setOfficeCommissionRate] = useState('');
@@ -47,13 +48,17 @@ export default function OfficeAccounts() {
   useEffect(() => {
     supabase.from('offices').select('id, name').order('name').then(({ data }) => setOffices(data || []));
     supabase.from('order_statuses').select('*').order('sort_order').then(({ data }) => setStatuses(data || []));
-    // Load couriers
+    // Load couriers + all users for audit display
     const loadCouriers = async () => {
       const { data: roles } = await supabase.from('user_roles').select('user_id').eq('role', 'courier');
       if (roles && roles.length > 0) {
         const { data: profiles } = await supabase.from('profiles').select('id, full_name').in('id', roles.map(r => r.user_id));
         setCouriers(profiles || []);
       }
+      const { data: all } = await supabase.from('profiles').select('id, full_name');
+      const map: Record<string, string> = {};
+      (all || []).forEach((p: any) => { map[p.id] = p.full_name || '—'; });
+      setAllUsers(map);
     };
     loadCouriers();
   }, []);
@@ -68,7 +73,7 @@ export default function OfficeAccounts() {
   const loadOfficeOrders = async () => {
     const { data } = await supabase
       .from('orders')
-      .select('id, barcode, status_id, partial_amount, price, delivery_price, is_settled, customer_code, customer_name, customer_phone, courier_id, office_id, created_at')
+      .select('id, barcode, status_id, partial_amount, price, delivery_price, is_settled, customer_code, customer_name, customer_phone, courier_id, office_id, created_at, returned_to_sender, returned_to_sender_at, returned_to_sender_by, last_modified_by, closed_by, closed_at')
       .eq('office_id', selectedOffice)
       .eq('is_closed', false)
       .order('created_at', { ascending: false });
@@ -79,6 +84,14 @@ export default function OfficeAccounts() {
     await supabase.from('orders').update({ is_settled: settled } as any).eq('id', orderId);
     setOfficeOrders(prev => prev.map(o => o.id === orderId ? { ...o, is_settled: settled } : o));
     toast.success(settled ? 'تم تحديد كخالص' : 'تم إلغاء التحديد');
+  };
+
+  const toggleReturnedToSender = async (orderId: string, returned: boolean) => {
+    const { error } = await supabase.from('orders').update({ returned_to_sender: returned } as any).eq('id', orderId);
+    if (error) { toast.error('فشل التحديث'); return; }
+    setOfficeOrders(prev => prev.map(o => o.id === orderId ? { ...o, returned_to_sender: returned, returned_to_sender_at: returned ? new Date().toISOString() : null } : o));
+    logActivity(returned ? 'order_returned_to_sender' : 'order_unreturned_to_sender', { order_id: orderId });
+    toast.success(returned ? 'تم تحديد ارتجاع للراسل' : 'تم إلغاء ارتجاع للراسل');
   };
 
   const getDateFilter = () => {
@@ -648,8 +661,10 @@ export default function OfficeAccounts() {
                      <TableHead className="text-right">عمولة المكتب</TableHead>
                      <TableHead className="text-right">الصافي</TableHead>
                      <TableHead className="text-right">الحالة</TableHead>
+                     <TableHead className="text-right">ارتجاع للراسل</TableHead>
                      <TableHead className="text-right">المندوب</TableHead>
                      <TableHead className="text-right hidden sm:table-cell">التاريخ</TableHead>
+                     <TableHead className="text-right hidden md:table-cell">آخر تعديل / قفل</TableHead>
                      <TableHead className="text-right">خالص</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -677,10 +692,37 @@ export default function OfficeAccounts() {
                         <TableCell className="text-sm text-blue-500 font-bold">{officeRate} ج.م</TableCell>
                         <TableCell className="text-sm font-bold text-primary">{net} ج.م</TableCell>
                         <TableCell>
-                          {status ? <Badge style={{ backgroundColor: status.color }} className="text-xs">{status.name}</Badge> : '-'}
+                          <div className="flex flex-col gap-1">
+                            {status ? <Badge style={{ backgroundColor: status.color }} className="text-xs">{status.name}</Badge> : '-'}
+                            {o.returned_to_sender && <Badge className="text-[10px] bg-rose-600 hover:bg-rose-700 text-white">تم ارتجاعه للراسل</Badge>}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            size="sm"
+                            variant={o.returned_to_sender ? 'default' : 'outline'}
+                            className={`text-xs h-7 px-2 ${o.returned_to_sender ? 'bg-rose-600 hover:bg-rose-700 text-white' : ''}`}
+                            onClick={() => toggleReturnedToSender(o.id, !o.returned_to_sender)}
+                          >
+                            {o.returned_to_sender ? '↩ تم الارتجاع' : 'ارتجاع للراسل'}
+                          </Button>
+                          {o.returned_to_sender && o.returned_to_sender_at && (
+                            <div className="text-[10px] text-muted-foreground mt-1">
+                              {new Date(o.returned_to_sender_at).toLocaleDateString('ar-EG')}
+                              {o.returned_to_sender_by && ` • ${allUsers[o.returned_to_sender_by] || ''}`}
+                            </div>
+                          )}
                         </TableCell>
                         <TableCell className="text-sm">{getCourierName(o.courier_id)}</TableCell>
                         <TableCell className="text-xs hidden sm:table-cell">{createdDate}</TableCell>
+                        <TableCell className="text-xs hidden md:table-cell">
+                          {o.last_modified_by && (
+                            <div>آخر تعديل: <span className="font-medium">{allUsers[o.last_modified_by] || '—'}</span></div>
+                          )}
+                          {o.closed_by && (
+                            <div className="text-rose-600">قفل بواسطة: <span className="font-medium">{allUsers[o.closed_by] || '—'}</span></div>
+                          )}
+                        </TableCell>
                         <TableCell>
                           <Button size="sm" variant={o.is_settled ? 'default' : 'outline'} className={`text-xs h-6 px-2 ${o.is_settled ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : ''}`} onClick={() => toggleSettled(o.id, !o.is_settled)}>
                             {o.is_settled ? '✓ خالص' : 'خالص'}
@@ -698,7 +740,7 @@ export default function OfficeAccounts() {
                     <TableCell className="font-bold text-amber-500">{courierRate * filteredOrders.length} ج.م</TableCell>
                     <TableCell className="font-bold text-blue-500">{officeRate * filteredOrders.length} ج.م</TableCell>
                     <TableCell className="font-bold text-primary">{filteredOrders.reduce((s, o) => s + Number(o.price || 0) - Number(o.delivery_price || 0), 0)} ج.م</TableCell>
-                    <TableCell colSpan={4} />
+                    <TableCell colSpan={6} />
                   </TableRow>
                 </TableFooter>
               </Table>

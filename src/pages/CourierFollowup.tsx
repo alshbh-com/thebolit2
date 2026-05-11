@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { MessageCircle, Phone, Search, Send } from 'lucide-react';
 import { toast } from 'sonner';
+import { logActivity } from '@/lib/activityLogger';
 
 interface Courier { id: string; full_name: string; phone?: string; }
 interface Order {
@@ -281,9 +282,12 @@ export default function CourierFollowup() {
                       <Select
                         value={o.status_id || ''}
                         onValueChange={async (val) => {
+                          const oldName = statusName(o.status_id);
+                          const newName = statuses.find(s => s.id === val)?.name || '';
                           const { error } = await supabase.from('orders').update({ status_id: val }).eq('id', o.id);
                           if (error) { toast.error('فشل تحديث الحالة'); return; }
-                          toast.success('تم تحديث حالة الأوردر');
+                          await logActivity('order_status_changed', { order_id: o.id, barcode: o.barcode, from: oldName, to: newName, courier_id: selectedCourier });
+                          toast.success(`تم تغيير الحالة إلى: ${newName}`);
                           setOrders(prev => prev.map(x => x.id === o.id ? { ...x, status_id: val } : x));
                         }}
                       >
