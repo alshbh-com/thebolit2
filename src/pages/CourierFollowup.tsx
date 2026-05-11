@@ -113,6 +113,8 @@ export default function CourierFollowup() {
 
   const statusName = (id?: string) => statuses.find(s => s.id === id)?.name || '—';
   const statusColor = (id?: string) => statuses.find(s => s.id === id)?.color || '#6b7280';
+  const officeName = (id?: string) => offices.find(o => o.id === id)?.name || '—';
+  const officeOwner = (id?: string) => offices.find(o => o.id === id)?.owner_name || '';
   const courierName = useMemo(() => couriers.find(c => c.id === selectedCourier)?.full_name || '', [couriers, selectedCourier]);
   const courierPhone = useMemo(() => couriers.find(c => c.id === selectedCourier)?.phone || '', [couriers, selectedCourier]);
 
