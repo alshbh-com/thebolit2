@@ -241,7 +241,10 @@ export default function CourierFollowup() {
                   <TableHead>التليفون</TableHead>
                   <TableHead>العنوان</TableHead>
                   <TableHead>المنتج</TableHead>
-                  <TableHead>المبلغ</TableHead>
+                  <TableHead>السعر</TableHead>
+                  <TableHead>الشحن</TableHead>
+                  <TableHead>الإجمالي</TableHead>
+                  <TableHead>المكتب</TableHead>
                   <TableHead>الحالة</TableHead>
                   <TableHead>ملاحظة المتابعة</TableHead>
                   <TableHead>إجراءات</TableHead>
@@ -249,15 +252,23 @@ export default function CourierFollowup() {
               </TableHeader>
               <TableBody>
                 {filtered.length === 0 ? (
-                  <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-6">لا توجد أوردرات</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={12} className="text-center text-muted-foreground py-6">لا توجد أوردرات</TableCell></TableRow>
                 ) : filtered.map(o => (
                   <TableRow key={o.id}>
                     <TableCell className="font-mono">{o.barcode}</TableCell>
-                    <TableCell>{o.customer_name}</TableCell>
+                    <TableCell className="font-medium">{o.customer_name}</TableCell>
                     <TableCell className="font-mono" dir="ltr">{o.customer_phone}</TableCell>
                     <TableCell className="max-w-[220px] whitespace-normal">{o.address}</TableCell>
                     <TableCell>{o.product_name}</TableCell>
-                    <TableCell>{o.price} ج</TableCell>
+                    <TableCell>{Number(o.price || 0)} ج</TableCell>
+                    <TableCell>{Number(o.delivery_price || 0)} ج</TableCell>
+                    <TableCell className="font-semibold">{Number(o.price || 0) + Number(o.delivery_price || 0)} ج</TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        <div className="font-medium">{officeName(o.office_id)}</div>
+                        {officeOwner(o.office_id) && <div className="text-xs text-muted-foreground">{officeOwner(o.office_id)}</div>}
+                      </div>
+                    </TableCell>
                     <TableCell>
                       <Badge style={{ backgroundColor: statusColor(o.status_id), color: 'white' }}>
                         {statusName(o.status_id)}
