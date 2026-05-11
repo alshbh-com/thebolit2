@@ -26,7 +26,8 @@ const DEFAULT_TEMPLATE = `السلام عليكم {customer_name} 🌷
 المنتج: {product_name}
 المبلغ المطلوب: {price} جنيه
 العنوان: {address}
-المندوب حاول يتواصل معاك ولم يتم الرد، برجاء التواصل معانا لتأكيد الاستلام. شكراً 🙏`;
+المندوب المسؤول: {courier} - رقمه: {courier_phone}
+يرجى التواصل مع المندوب مباشرة لتأكيد الاستلام. شكراً 🙏`;
 
 function normalizeEgPhone(raw?: string): string | null {
   if (!raw) return null;
@@ -39,7 +40,7 @@ function normalizeEgPhone(raw?: string): string | null {
   return p;
 }
 
-function buildMessage(template: string, order: Order, statusName: string, courierName: string) {
+function buildMessage(template: string, order: Order, statusName: string, courierName: string, courierPhone: string) {
   const repl = (s: string, k: string, v: string) => s.split(k).join(v);
   let r = template;
   r = repl(r, '{customer_name}', order.customer_name || 'حضرتك');
@@ -49,6 +50,7 @@ function buildMessage(template: string, order: Order, statusName: string, courie
   r = repl(r, '{address}', order.address || '');
   r = repl(r, '{status}', statusName || '');
   r = repl(r, '{courier}', courierName || '');
+  r = repl(r, '{courier_phone}', courierPhone || '');
   r = repl(r, '{notes}', order.notes || '');
   return r;
 }
@@ -107,6 +109,7 @@ export default function CourierFollowup() {
   const statusName = (id?: string) => statuses.find(s => s.id === id)?.name || '—';
   const statusColor = (id?: string) => statuses.find(s => s.id === id)?.color || '#6b7280';
   const courierName = useMemo(() => couriers.find(c => c.id === selectedCourier)?.full_name || '', [couriers, selectedCourier]);
+  const courierPhone = useMemo(() => couriers.find(c => c.id === selectedCourier)?.phone || '', [couriers, selectedCourier]);
 
   const filtered = useMemo(() => {
     return orders.filter(o => {
@@ -133,14 +136,14 @@ export default function CourierFollowup() {
       toast.error('رقم العميل غير صالح');
       return;
     }
-    const msg = buildMessage(template, order, statusName(order.status_id), courierName);
+    const msg = buildMessage(template, order, statusName(order.status_id), courierName, courierPhone);
     const url = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
     window.open(url, '_blank');
   };
 
   const openPreview = (order: Order) => {
     setActiveOrder(order);
-    setPreviewText(buildMessage(template, order, statusName(order.status_id), courierName));
+    setPreviewText(buildMessage(template, order, statusName(order.status_id), courierName, courierPhone));
     setPreviewOpen(true);
   };
 
@@ -203,7 +206,7 @@ export default function CourierFollowup() {
           </div>
 
           <details className="rounded-md border p-3">
-            <summary className="cursor-pointer font-medium">قالب رسالة الواتساب (متغيرات: {'{customer_name} {barcode} {product_name} {price} {address} {status} {courier} {notes}'})</summary>
+            <summary className="cursor-pointer font-medium">قالب رسالة الواتساب (متغيرات: {'{customer_name} {barcode} {product_name} {price} {address} {status} {courier} {courier_phone} {notes}'})</summary>
             <div className="mt-3 space-y-2">
               <Textarea value={template} onChange={e => setTemplate(e.target.value)} rows={6} />
               <div className="flex gap-2">

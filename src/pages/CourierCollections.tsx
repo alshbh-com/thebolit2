@@ -250,7 +250,7 @@ export default function CourierCollections() {
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">تحصيلات المندوبين</h1>
 
-      <div className="flex flex-wrap gap-3 items-end">
+      <div className="flex flex-wrap gap-3 items-end justify-between">
         <div className="space-y-1">
           <Label className="text-xs">المندوب</Label>
           <Select value={selectedCourier} onValueChange={setSelectedCourier}>
@@ -258,6 +258,38 @@ export default function CourierCollections() {
             <SelectContent>{couriers.map(c => <SelectItem key={c.id} value={c.id}>{c.full_name}</SelectItem>)}</SelectContent>
           </Select>
         </div>
+        {selectedCourier && orders.length > 0 && (() => {
+          const courier = couriers.find(c => c.id === selectedCourier);
+          const duesColumns = [
+            { key: 'barcode', label: 'الباركود' },
+            { key: 'customer_code', label: 'الكود' },
+            { key: 'customer_name', label: 'العميل' },
+            { key: 'customer_phone', label: 'الهاتف' },
+            { key: 'address', label: 'العنوان' },
+            { key: 'office_name', label: 'المكتب', format: (_: any, r: any) => getOfficeName(r.office_id) },
+            { key: 'price', label: 'سعر المنتج', format: (v: any) => `${Number(v || 0)} ج.م` },
+            { key: 'delivery_price', label: 'الشحن', format: (v: any) => `${Number(v || 0)} ج.م` },
+            { key: 'status', label: 'الحالة', format: (_: any, r: any) => r.order_statuses?.name || '-' },
+            { key: 'collected', label: 'المحصل', format: (_: any, r: any) => `${getCollectedAmount(r)} ج.م` },
+            { key: 'created_at', label: 'تاريخ الأوردر', format: (v: any) => v ? new Date(v).toLocaleDateString('ar-EG') : '-' },
+          ];
+          const duesMeta = {
+            title: `كشف مستحقات المندوب — ${courier?.full_name || ''}`,
+            subtitle: `تقرير المتبقي على المندوب (بدون تقفيل) | تم الإصدار: ${new Date().toLocaleString('ar-EG')}`,
+            filtersText: `المندوب: ${courier?.full_name || '-'}`,
+            summary: [
+              { label: '📦 عدد الأوردرات المتبقية', value: orders.length },
+              { label: '💰 إجمالي التحصيل', value: `${totalCollection.toLocaleString()} ج.م` },
+              { label: '🎯 العمولة', value: `${commissionTotal.toLocaleString()} ج.م` },
+              { label: '🏢 عمولة المكتب', value: `${totalOfficeCommission.toLocaleString()} ج.م` },
+              { label: '✅ صافي المستحق', value: `${netDue.toLocaleString()} ج.م` },
+            ],
+          };
+          return (
+            <ReportButton meta={duesMeta} columns={duesColumns} rows={orders}
+              whatsappPhone={courier?.phone} label="تقرير المستحقات (بدون تقفيل)" />
+          );
+        })()}
       </div>
 
       {selectedCourier && (
