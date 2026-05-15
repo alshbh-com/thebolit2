@@ -34,6 +34,7 @@ export default function OfficeAccounts() {
   const [officeCommissionRate, setOfficeCommissionRate] = useState('');
 
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+  const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
 
   const [advanceOpen, setAdvanceOpen] = useState(false);
   const [advanceOffice, setAdvanceOffice] = useState('');
@@ -291,11 +292,16 @@ export default function OfficeAccounts() {
 
   const officeName = offices.find(o => o.id === selectedOffice)?.name || '';
 
+  const getReportRows = () => selectedOrderIds.length > 0
+    ? filteredOrders.filter(o => selectedOrderIds.includes(o.id))
+    : filteredOrders;
+
   const exportToExcel = () => {
-    if (filteredOrders.length === 0) { toast.error('لا توجد بيانات للتصدير'); return; }
+    const rows = getReportRows();
+    if (rows.length === 0) { toast.error('لا توجد بيانات للتصدير'); return; }
     const statusName = (sid: string) => statuses.find(s => s.id === sid)?.name || '-';
 
-    const data = filteredOrders.map((o, i) => ({
+    const data = rows.map((o, i) => ({
       '#': i + 1,
       'الباركود': o.barcode || '-',
       'الكود': o.customer_code || '-',
@@ -318,11 +324,11 @@ export default function OfficeAccounts() {
       'العميل': 'الإجمالي',
       'الهاتف': '',
       'المكتب': '',
-      'السعر': filteredOrders.reduce((s, o) => s + Number(o.price || 0), 0),
-      'الشحن': filteredOrders.reduce((s, o) => s + Number(o.delivery_price || 0), 0),
-      'عمولة المندوب': courierRate * filteredOrders.length,
-      'عمولة المكتب': officeRate * filteredOrders.length,
-      'الصافي': filteredOrders.reduce((s, o) => s + Number(o.price || 0) - Number(o.delivery_price || 0), 0),
+      'السعر': rows.reduce((s, o) => s + Number(o.price || 0), 0),
+      'الشحن': rows.reduce((s, o) => s + Number(o.delivery_price || 0), 0),
+      'عمولة المندوب': courierRate * rows.length,
+      'عمولة المكتب': officeRate * rows.length,
+      'الصافي': rows.reduce((s, o) => s + Number(o.price || 0) - Number(o.delivery_price || 0), 0),
       'الحالة': '',
       'المندوب': '',
     });
@@ -335,12 +341,13 @@ export default function OfficeAccounts() {
   };
 
   const printSheet = () => {
-    if (filteredOrders.length === 0) { toast.error('لا توجد بيانات للطباعة'); return; }
+    const rows = getReportRows();
+    if (rows.length === 0) { toast.error('لا توجد بيانات للطباعة'); return; }
     const statusName = (sid: string) => statuses.find(s => s.id === sid)?.name || '-';
     const w = window.open('', '_blank');
     if (!w) return;
 
-    const orderRows = filteredOrders.map((o, i) => `<tr>
+    const orderRows = rows.map((o, i) => `<tr>
       <td>${i + 1}</td>
       <td>${o.barcode || '-'}</td>
       <td>${o.customer_name || '-'}</td>
@@ -355,10 +362,11 @@ export default function OfficeAccounts() {
       <td style="text-align:center;font-weight:bold;color:#16a34a">✅ خالص</td>
     </tr>`).join('');
 
-    const totalPrice = filteredOrders.reduce((s, o) => s + Number(o.price || 0), 0);
-    const totalShipping = filteredOrders.reduce((s, o) => s + Number(o.delivery_price || 0), 0);
+    const totalPrice = rows.reduce((s, o) => s + Number(o.price || 0), 0);
+    const totalShipping = rows.reduce((s, o) => s + Number(o.delivery_price || 0), 0);
     const totalNet = totalPrice - totalShipping;
-    const settledCount = filteredOrders.length; // PDF شامل: كل الأوردرات تظهر كخالص تلقائياً
+    const settledCount = rows.length;
+    const scopeLabel = selectedOrderIds.length > 0 ? `محدد: ${rows.length} من ${filteredOrders.length}` : `الكل: ${rows.length}`;
 
     w.document.write(`<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8">
     <title>حسابات ${officeName}</title>
@@ -373,18 +381,18 @@ export default function OfficeAccounts() {
       .total-row { background: #e8f4e8; font-weight: bold; }
     </style></head><body>
     <div class="header">The Pilito - حسابات ${officeName}</div>
-    <div class="sub-header">${format(new Date(), 'dd/MM/yyyy')} | خالص: ${settledCount} / ${filteredOrders.length}</div>
+    <div class="sub-header">${format(new Date(), 'dd/MM/yyyy')} | ${scopeLabel}</div>
     
     <table>
       <thead><tr><th>#</th><th>الباركود</th><th>العميل</th><th>الهاتف</th><th>الإجمالي</th><th>الشحن</th><th>عمولة المندوب</th><th>عمولة المكتب</th><th>الصافي</th><th>الحالة</th><th>المندوب</th><th>خالص</th></tr></thead>
       <tbody>
         ${orderRows}
         <tr class="total-row">
-          <td colspan="4">الإجمالي (${filteredOrders.length} أوردر)</td>
+          <td colspan="4">الإجمالي (${rows.length} أوردر)</td>
           <td>${totalPrice}</td>
           <td>${totalShipping}</td>
-          <td>${courierRate * filteredOrders.length}</td>
-          <td>${officeRate * filteredOrders.length}</td>
+          <td>${courierRate * rows.length}</td>
+          <td>${officeRate * rows.length}</td>
           <td>${totalNet}</td>
           <td colspan="3">خالص: ${settledCount}</td>
         </tr>
@@ -459,11 +467,18 @@ export default function OfficeAccounts() {
         {selectedOffice !== 'all' && (
           <>
             <Button size="sm" variant="outline" onClick={exportToExcel}>
-              <FileSpreadsheet className="h-4 w-4 ml-1" />Excel
+              <FileSpreadsheet className="h-4 w-4 ml-1" />
+              {selectedOrderIds.length > 0 ? `Excel (${selectedOrderIds.length} محدد)` : 'Excel'}
             </Button>
-            <Button size="sm" variant="outline" onClick={printSheet}>
-              <Printer className="h-4 w-4 ml-1" />طباعة
+            <Button size="sm" variant={selectedOrderIds.length > 0 ? 'default' : 'outline'} onClick={printSheet}>
+              <Printer className="h-4 w-4 ml-1" />
+              {selectedOrderIds.length > 0 ? `طباعة المحدد (${selectedOrderIds.length})` : 'طباعة الكل'}
             </Button>
+            {selectedOrderIds.length > 0 && (
+              <Button size="sm" variant="ghost" onClick={() => setSelectedOrderIds([])}>
+                إلغاء التحديد
+              </Button>
+            )}
           </>
         )}
       </div>
@@ -644,13 +659,24 @@ export default function OfficeAccounts() {
       {selectedOffice !== 'all' && filteredOrders.length > 0 && (
         <Card className="bg-card border-border">
           <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-semibold">أوردرات المكتب ({filteredOrders.length})</h3>
+            <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+              <h3 className="font-semibold">
+                أوردرات المكتب ({filteredOrders.length})
+                {selectedOrderIds.length > 0 && (
+                  <span className="text-primary text-sm mr-2">- محدد: {selectedOrderIds.length}</span>
+                )}
+              </h3>
             </div>
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow className="border-border">
+                     <TableHead className="text-right w-10">
+                       <Checkbox
+                         checked={filteredOrders.length > 0 && selectedOrderIds.length === filteredOrders.length}
+                         onCheckedChange={(v) => setSelectedOrderIds(v ? filteredOrders.map(o => o.id) : [])}
+                       />
+                     </TableHead>
                      <TableHead className="text-right">الباركود</TableHead>
                      <TableHead className="text-right">العميل</TableHead>
                      <TableHead className="text-right">الهاتف</TableHead>
@@ -675,8 +701,15 @@ export default function OfficeAccounts() {
                     const shipping = Number(o.delivery_price || 0);
                     const net = price - shipping;
                     const createdDate = o.created_at ? new Date(o.created_at).toLocaleDateString('ar-EG') : '-';
+                    const isSelected = selectedOrderIds.includes(o.id);
                     return (
-                      <TableRow key={o.id} className="border-border">
+                      <TableRow key={o.id} className={`border-border ${isSelected ? 'bg-primary/5' : ''}`}>
+                        <TableCell>
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={(v) => setSelectedOrderIds(prev => v ? [...prev, o.id] : prev.filter(id => id !== o.id))}
+                          />
+                        </TableCell>
                         <TableCell className="font-mono text-xs">
                           <div className="space-y-1">
                             <div>{o.barcode || '-'}</div>
@@ -734,7 +767,7 @@ export default function OfficeAccounts() {
                 </TableBody>
                 <TableFooter>
                   <TableRow className="border-border bg-muted/50">
-                    <TableCell colSpan={4} className="font-bold">الإجمالي ({filteredOrders.length})</TableCell>
+                    <TableCell colSpan={5} className="font-bold">الإجمالي ({filteredOrders.length})</TableCell>
                     <TableCell className="font-bold">{filteredOrders.reduce((s, o) => s + Number(o.price || 0), 0)} ج.م</TableCell>
                     <TableCell className="font-bold">{filteredOrders.reduce((s, o) => s + Number(o.delivery_price || 0), 0)} ج.م</TableCell>
                     <TableCell className="font-bold text-amber-500">{courierRate * filteredOrders.length} ج.م</TableCell>
