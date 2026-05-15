@@ -34,6 +34,7 @@ export default function OfficeAccounts() {
   const [officeCommissionRate, setOfficeCommissionRate] = useState('');
 
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+  const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
 
   const [advanceOpen, setAdvanceOpen] = useState(false);
   const [advanceOffice, setAdvanceOffice] = useState('');
