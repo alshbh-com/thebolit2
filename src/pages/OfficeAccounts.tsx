@@ -341,12 +341,13 @@ export default function OfficeAccounts() {
   };
 
   const printSheet = () => {
-    if (filteredOrders.length === 0) { toast.error('لا توجد بيانات للطباعة'); return; }
+    const rows = getReportRows();
+    if (rows.length === 0) { toast.error('لا توجد بيانات للطباعة'); return; }
     const statusName = (sid: string) => statuses.find(s => s.id === sid)?.name || '-';
     const w = window.open('', '_blank');
     if (!w) return;
 
-    const orderRows = filteredOrders.map((o, i) => `<tr>
+    const orderRows = rows.map((o, i) => `<tr>
       <td>${i + 1}</td>
       <td>${o.barcode || '-'}</td>
       <td>${o.customer_name || '-'}</td>
@@ -361,10 +362,11 @@ export default function OfficeAccounts() {
       <td style="text-align:center;font-weight:bold;color:#16a34a">✅ خالص</td>
     </tr>`).join('');
 
-    const totalPrice = filteredOrders.reduce((s, o) => s + Number(o.price || 0), 0);
-    const totalShipping = filteredOrders.reduce((s, o) => s + Number(o.delivery_price || 0), 0);
+    const totalPrice = rows.reduce((s, o) => s + Number(o.price || 0), 0);
+    const totalShipping = rows.reduce((s, o) => s + Number(o.delivery_price || 0), 0);
     const totalNet = totalPrice - totalShipping;
-    const settledCount = filteredOrders.length; // PDF شامل: كل الأوردرات تظهر كخالص تلقائياً
+    const settledCount = rows.length;
+    const scopeLabel = selectedOrderIds.length > 0 ? `محدد: ${rows.length} من ${filteredOrders.length}` : `الكل: ${rows.length}`;
 
     w.document.write(`<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8">
     <title>حسابات ${officeName}</title>
@@ -379,18 +381,18 @@ export default function OfficeAccounts() {
       .total-row { background: #e8f4e8; font-weight: bold; }
     </style></head><body>
     <div class="header">The Pilito - حسابات ${officeName}</div>
-    <div class="sub-header">${format(new Date(), 'dd/MM/yyyy')} | خالص: ${settledCount} / ${filteredOrders.length}</div>
+    <div class="sub-header">${format(new Date(), 'dd/MM/yyyy')} | ${scopeLabel}</div>
     
     <table>
       <thead><tr><th>#</th><th>الباركود</th><th>العميل</th><th>الهاتف</th><th>الإجمالي</th><th>الشحن</th><th>عمولة المندوب</th><th>عمولة المكتب</th><th>الصافي</th><th>الحالة</th><th>المندوب</th><th>خالص</th></tr></thead>
       <tbody>
         ${orderRows}
         <tr class="total-row">
-          <td colspan="4">الإجمالي (${filteredOrders.length} أوردر)</td>
+          <td colspan="4">الإجمالي (${rows.length} أوردر)</td>
           <td>${totalPrice}</td>
           <td>${totalShipping}</td>
-          <td>${courierRate * filteredOrders.length}</td>
-          <td>${officeRate * filteredOrders.length}</td>
+          <td>${courierRate * rows.length}</td>
+          <td>${officeRate * rows.length}</td>
           <td>${totalNet}</td>
           <td colspan="3">خالص: ${settledCount}</td>
         </tr>
