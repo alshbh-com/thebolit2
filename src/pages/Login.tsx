@@ -80,23 +80,17 @@ export default function Login() {
             </Button>
           </form>
 
-          {/* WhatsApp + credit */}
-          <div className="mt-6 space-y-3">
-            <a
-              href="https://wa.me/201061067966"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex w-full items-center justify-center gap-2 h-11 rounded-md bg-[hsl(var(--success))]/15 hover:bg-[hsl(var(--success))]/25 border border-[hsl(var(--success))]/50 text-[hsl(var(--success))] font-display uppercase tracking-[0.15em] text-xs transition-colors shadow-glow-lime"
-            >
-              <MessageCircle className="h-4 w-4" />
-              تواصل عبر واتساب
-            </a>
-            <p className="text-center text-[11px] text-muted-foreground leading-relaxed">
-              تم صنع السيستم من شركة{' '}
-              <span className="font-display tracking-widest text-secondary neon-text-magenta">دوبامين</span>{' '}
-              للبرمجة <span className="text-muted-foreground/70">(الشبح سابقاً)</span>
-            </p>
-          </div>
+          {/* Credit */}
+          <p className="mt-6 text-center text-[11px] text-muted-foreground leading-relaxed">
+            تم صنع السيستم من شركة{' '}
+            <span className="font-display tracking-widest text-secondary neon-text-magenta">دوبامين</span>{' '}
+            للبرمجة <span className="text-muted-foreground/70">(الشبح سابقاً)</span>
+            <span className="block mt-1 font-mono-neon tracking-widest text-primary" dir="ltr">
+              <a href="https://wa.me/201061067966" target="_blank" rel="noopener noreferrer" className="hover:underline">
+                01061067966
+              </a>
+            </span>
+          </p>
         </CardContent>
       </Card>
     </div>
